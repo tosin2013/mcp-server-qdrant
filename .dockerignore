@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.py[cod]
+*$py.class
+.pytest_cache
+.coverage
+coverage.xml
+htmlcov
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Build
+*.egg-info/
+dist/
+build/
+
+# Documentation
+docs/
+*.md
+!README.md
+!VERSION
+
+# Development
+tests/
+.pre-commit-config.yaml
+.ruff.toml
+.pyright.json
+
+# Container
+Dockerfile
+Containerfile
+docker-compose*.yml
+podman-compose*.yml 

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    command: pytest tests/ --cov=mcp_server_qdrant --cov-report=xml
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - COLLECTION_NAME=test-collection
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./tests:/app/tests
+      - ./coverage.xml:/app/coverage.xml
+    depends_on:
+      - qdrant
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    environment:
+      - QDRANT_ALLOW_EMPTY_API_KEY=1
+    tmpfs:
+      - /qdrant/storage 

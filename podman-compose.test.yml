@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  tests:
+    build:
+      context: .
+      dockerfile: Containerfile
+      target: builder
+    command: pytest tests/ --cov=mcp_server_qdrant --cov-report=xml
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - COLLECTION_NAME=test-collection
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./tests:/app/tests:Z
+      - ./coverage.xml:/app/coverage.xml:Z
+    depends_on:
+      - qdrant
+    user: "1000:1000"  # Explicit user mapping for rootless mode
+
+  qdrant:
+    image: docker.io/qdrant/qdrant:latest
+    environment:
+      - QDRANT_ALLOW_EMPTY_API_KEY=1
+    tmpfs:
+      - /qdrant/storage
+    user: "1000:1000"  # Explicit user mapping for rootless mode 
