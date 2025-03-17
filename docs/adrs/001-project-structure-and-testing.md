@@ -6,11 +6,13 @@ Accepted
 ## Context
 The MCP server for Qdrant requires a well-organized project structure and comprehensive testing strategy to ensure reliability and maintainability. We need to establish patterns for code organization, testing, and documentation.
 
+Following the principles outlined in [evidence-based-decision-making](https://endjin.com/blog/2024/03/adr-a-dotnet-tool-for-creating-and-managing-architecture-decision-records), we aim to document our architectural decisions in a formalized way.
+
 ## Decision
 
 ### Project Structure
-We will organize the project with the following structure:
-
+We will organize the project with the following structure, based on Python best practices and maintainable project organization:
+zoh
 ```
 mcp-server-qdrant/
 ├── docs/
@@ -63,6 +65,7 @@ mcp-server-qdrant/
 - Comprehensive test coverage ensures reliability
 - Easy onboarding for new contributors
 - Automated quality checks reduce bugs
+- Enables distributed and asynchronous development processes [1]
 
 ### Negative
 - Initial setup time required for test infrastructure
@@ -73,4 +76,7 @@ mcp-server-qdrant/
 1. Set up GitHub Actions for CI/CD
 2. Configure pre-commit hooks for code quality
 3. Create test templates and examples
-4. Document testing practices in README 
+4. Document testing practices in README
+
+## References
+1. [ADR Benefits for Remote Teams](https://endjin.com/blog/2024/03/adr-a-dotnet-tool-for-creating-and-managing-architecture-decision-records) 

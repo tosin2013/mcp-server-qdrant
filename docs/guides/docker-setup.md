@@ -11,240 +11,211 @@ This guide provides instructions for running the MCP Server Qdrant using Docker 
    - macOS: [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/)
    - Linux: [Docker Desktop for Linux](https://docs.docker.com/desktop/install/linux-install/)
 
-2. **Claude Desktop**
-   - Pro subscription required
-   - Latest version installed
+2. **Git**
+   - Required for cloning the repository and build process
 
-## Docker Configuration
+## Installation
 
 ### 1. Install Docker Desktop
 
-#### Windows
-1. Download and run Docker Desktop Installer for Windows
-2. Enable WSL 2 if prompted
-3. Log out and log back in when installation completes
+Follow the standard installation process for your platform from the [Docker Desktop Documentation](https://docs.docker.com/desktop/).
 
-#### macOS
-1. Download Docker Desktop for Mac (Intel or Apple Silicon)
-2. Drag to Applications folder
-3. Open Docker Desktop and complete installation
+### 2. Clone the Repository
 
-#### Linux (Ubuntu example)
 ```bash
-# Add Docker's official GPG key
-sudo apt-get update
-sudo apt-get install ca-certificates curl gnupg
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-
-# Add the repository to Apt sources
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker Desktop
-sudo apt-get update
-sudo apt-get install docker-desktop
-```
-
-### 2. Configure Claude Desktop
-
-Create or edit your `claude_desktop_config.json`:
-
-#### Windows (`%APPDATA%\Claude Desktop\claude_desktop_config.json`):
-```json
-{
-  "servers": [
-    {
-      "type": "qdrant",
-      "config": {
-        "command": "docker",
-        "args": [
-          "run",
-          "--rm",
-          "-p", "8000:8000",
-          "--name", "mcp-qdrant",
-          "-e", "COLLECTION_NAME=memories",
-          "-e", "QDRANT_URL=http://host.docker.internal:6333",
-          "-e", "EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2",
-          "mcp-server-qdrant:latest"
-        ],
-        "env": {
-          "DOCKER_HOST": "npipe:////.//pipe//docker_engine"
-        }
-      }
-    }
-  ]
-}
-```
-
-#### macOS/Linux (`~/.config/Claude Desktop/claude_desktop_config.json`):
-```json
-{
-  "servers": [
-    {
-      "type": "qdrant",
-      "config": {
-        "command": "docker",
-        "args": [
-          "run",
-          "--rm",
-          "-p", "8000:8000",
-          "--name", "mcp-qdrant",
-          "-e", "COLLECTION_NAME=memories",
-          "-e", "QDRANT_URL=http://host.docker.internal:6333",
-          "-e", "EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2",
-          "mcp-server-qdrant:latest"
-        ]
-      }
-    }
-  ]
-}
+git clone https://github.com/modelcontextprotocol/mcp-server-qdrant.git
+cd mcp-server-qdrant
 ```
 
 ### 3. Build the Docker Image
 
-From the project directory:
+The project uses a Makefile to simplify the build process:
 
 ```bash
-# Clone the repository (if not already done)
-git clone https://github.com/yourusername/mcp-server-qdrant.git
-cd mcp-server-qdrant
-
 # Build the image
-docker build \
-    --build-arg VERSION=$(cat VERSION) \
-    --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
-    --build-arg VCS_REF=$(git rev-parse --short HEAD) \
-    -t mcp-server-qdrant:latest .
+make build
 ```
 
-### 4. Running Qdrant
+This will:
+- Generate requirements from pyproject.toml
+- Build a multi-stage Docker image
+- Tag the image as both latest and version-specific tags
 
-You'll need a running Qdrant instance. Here's how to run it with Docker:
+### 4. Start the Services
+
+The project includes a docker-compose.yml for easy deployment:
 
 ```bash
-# Create a volume for persistent storage
-docker volume create qdrant_storage
+# Start both Qdrant and MCP server
+docker compose up -d
+```
 
-# Run Qdrant container
-docker run -d \
-    --name qdrant \
-    -p 6333:6333 \
-    -p 6334:6334 \
-    -v qdrant_storage:/qdrant/storage \
-    qdrant/qdrant
+This will start:
+- Qdrant on ports 6333 (HTTP) and 6334 (GRPC)
+- MCP Server on port 8080
+
+## Configuration
+
+### Environment Variables
+
+The MCP server supports the following environment variables:
+
+```bash
+QDRANT_URL=http://qdrant:6333      # URL of the Qdrant service
+COLLECTION_NAME=mcp_unified_store   # Name of the Qdrant collection
+LOG_LEVEL=INFO                     # Logging level
+```
+
+### Docker Compose Configuration
+
+The default `docker-compose.yml` provides a production-ready setup:
+
+```yaml
+version: '3.8'
+
+services:
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Containerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - COLLECTION_NAME=mcp_unified_store
+      - LOG_LEVEL=INFO
+    depends_on:
+      - qdrant
+    volumes:
+      - ./data/mcp:/data/mcp
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+networks:
+  mcp-network:
+    driver: bridge
 ```
 
 ## Usage
 
-### Starting the Server
-
-The server will start automatically when Claude Desktop launches, based on the configuration in `claude_desktop_config.json`.
-
-To manually start the server:
+### Managing the Services
 
 ```bash
-# Windows CMD
-docker run -d -p 8000:8000 ^
-    --name mcp-qdrant ^
-    -e COLLECTION_NAME=memories ^
-    -e QDRANT_URL=http://host.docker.internal:6333 ^
-    -e EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2 ^
-    mcp-server-qdrant:latest
+# Start services
+docker compose up -d
 
-# macOS/Linux
-docker run -d -p 8000:8000 \
-    --name mcp-qdrant \
-    -e COLLECTION_NAME=memories \
-    -e QDRANT_URL=http://host.docker.internal:6333 \
-    -e EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2 \
-    mcp-server-qdrant:latest
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+
+# Rebuild and restart
+docker compose up -d --build
 ```
 
-### Stopping the Server
+### Health Checks
 
+The services expose health check endpoints:
+
+- MCP Server: http://localhost:8080/health
+- Qdrant: http://localhost:6333/health
+
+## Claude Desktop Integration
+
+### Configuration
+
+Create or edit the Claude Desktop configuration file:
+
+- **Windows**: `%APPDATA%\Claude Desktop\claude_desktop_config.json`
+- **macOS/Linux**: `~/.config/Claude Desktop/claude_desktop_config.json`
+
+### Setup Steps
+
+1. **Create Docker Network** (if not already created):
 ```bash
-docker stop mcp-qdrant
-```
-
-### Viewing Logs
-
-```bash
-docker logs mcp-qdrant
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Container Network Issues**
-   - Ensure Qdrant is accessible via `host.docker.internal`
-   - Check Docker network settings
-   - Verify ports are not in use
-
-2. **Permission Issues**
-   - Run Docker Desktop as administrator (Windows)
-   - Check Docker group membership (Linux)
-   - Verify file permissions
-
-3. **Resource Constraints**
-   - Check Docker Desktop resource settings
-   - Monitor container resource usage
-   - Increase allocated memory if needed
-
-### Docker Commands for Debugging
-
-```bash
-# Check container status
-docker ps -a
-
-# View container logs
-docker logs mcp-qdrant
-
-# Inspect container
-docker inspect mcp-qdrant
-
-# Check container resources
-docker stats mcp-qdrant
-```
-
-## Advanced Configuration
-
-### Using Custom Networks
-
-```bash
-# Create a custom network
 docker network create mcp-network
-
-# Run Qdrant in the network
-docker run -d --network mcp-network --name qdrant qdrant/qdrant
-
-# Run MCP server in the same network
-docker run -d --network mcp-network \
-    -e QDRANT_URL=http://qdrant:6333 \
-    -e COLLECTION_NAME=memories \
-    mcp-server-qdrant:latest
 ```
 
-### Using Environment Files
-
-Create a `.env` file:
-```env
-COLLECTION_NAME=memories
-QDRANT_URL=http://host.docker.internal:6333
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-```
-
-Run with environment file:
+2. **Start Qdrant** (if using local Qdrant):
 ```bash
-docker run -d --env-file .env mcp-server-qdrant:latest
+docker run -d \
+    --name qdrant \
+    --network mcp-network \
+    -p 6333:6333 \
+    -p 6334:6334 \
+    -v ./data/qdrant:/qdrant/storage \
+    docker.io/qdrant/qdrant:latest
 ```
 
-## References
+3. **Configure Claude Desktop**
 
-- [Docker Desktop Documentation](https://docs.docker.com/desktop/)
-- [Qdrant Docker Guide](https://qdrant.tech/documentation/guides/installation/#docker)
-- [Model Context Protocol Documentation](https://modelcontextprotocol.io/) 
+Choose the appropriate configuration based on your setup:
+
+#### 1. Local Docker Setup (Recommended)
+
+```json
+{
+  "qdrant": {
+    "command": "docker",
+    "args": [
+      "run",
+      "--rm",
+      "--network", "mcp-network",
+      "-p", "8080:8080",
+      "-e", "QDRANT_URL=http://qdrant:6333",
+      "-e", "COLLECTION_NAME=mcp_unified_store",
+      "-e", "EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2",
+      "-e", "LOG_LEVEL=INFO",
+      "-e", "PYTHONPATH=/usr/local/lib/python3.11/site-packages",
+      "quay.io/takinosh/mcp-server-qdrant:v0.7.1"
+    ]
+  }
+}
+```
+
+#### 2. Cloud-Hosted Qdrant
+
+For cloud-hosted Qdrant, you don't need the Docker network:
+
+```json
+{
+  "qdrant": {
+    "command": "docker",
+    "args": [
+      "run",
+      "--rm",
+      "-p", "8080:8080",
+      "-e", "QDRANT_URL=https://xyz-example.eu-central.aws.cloud.qdrant.io:6333",
+      "-e", "QDRANT_API_KEY=your_api_key",
+      "-e", "COLLECTION_NAME=your-collection-name",
+      "-e", "EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2",
+      "-e", "LOG_LEVEL=INFO",
+      "-e", "PYTHONPATH=/usr/local/lib/python3.11/site-packages",
+      "quay.io/takinosh/mcp-server-qdrant:v0.7.1"
+    ]
+  }
+}
+```

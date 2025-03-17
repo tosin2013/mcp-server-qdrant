@@ -34,7 +34,7 @@ docker-build: docker-debug
 		--no-cache \
 		--tag $(IMAGE_NAME):latest \
 		--tag $(IMAGE_NAME):v$(VERSION) \
-		--file Dockerfile .
+		--file Containerfile .
 
 docker-push:
 	docker push $(IMAGE_NAME):latest

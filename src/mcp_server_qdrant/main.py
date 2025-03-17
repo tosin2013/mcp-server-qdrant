@@ -1,4 +1,7 @@
 import argparse
+import uvicorn
+
+from .sse import create_app
 
 
 def main():
@@ -15,10 +18,24 @@ def main():
         choices=["stdio", "sse"],
         default="stdio",
     )
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host to bind to",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind to",
+    )
     args = parser.parse_args()
 
-    # Import is done here to make sure environment variables are loaded
-    # only after we make the changes.
-    from mcp_server_qdrant.server import mcp
-
-    mcp.run(transport=args.transport)
+    if args.transport == "sse":
+        # Run the server with SSE transport
+        app = create_app()
+        uvicorn.run(app, host=args.host, port=args.port)
+    else:
+        # Run the server with stdio transport
+        from mcp_server_qdrant.server import mcp
+        mcp.run(transport=args.transport)

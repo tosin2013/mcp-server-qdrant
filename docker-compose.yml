@@ -4,15 +4,32 @@ services:
   mcp-server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Containerfile
+      args:
+        - VERSION=${VERSION:-dev}
+        - BUILD_DATE=${BUILD_DATE:-unknown}
+        - VCS_REF=${VCS_REF:-unknown}
     ports:
       - "8000:8000"
     environment:
       - QDRANT_URL=http://qdrant:6333
-      - COLLECTION_NAME=dev-collection
+      - COLLECTION_NAME=mcp_unified_store
+      - EMBEDDING_PROVIDER=fastembed
       - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - LOG_LEVEL=DEBUG
+    command: ["--transport", "sse", "--host", "0.0.0.0", "--port", "8000"]
     depends_on:
-      - qdrant
+      qdrant:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
+    networks:
+      - mcp-network
+    restart: unless-stopped
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -21,6 +38,23 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT_ALLOW_RECOVERY=true
+      - QDRANT_FORCE_BACKUP=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/collections"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    networks:
+      - mcp-network
+    restart: unless-stopped
 
 volumes:
-  qdrant_data: 
+  qdrant_data:
+    driver: local
+
+networks:
+  mcp-network:
+    driver: bridge 

@@ -38,6 +38,13 @@ def test_data():
 @pytest.fixture
 def mock_env_vars(monkeypatch):
     """Set up mock environment variables for testing."""
+    # First clear any existing environment variables that might affect tests
+    for key in ["QDRANT_URL", "COLLECTION_NAME", "EMBEDDING_PROVIDER", "EMBEDDING_MODEL", 
+                "QDRANT_API_KEY", "QDRANT_LOCAL_PATH", "LOG_LEVEL", 
+                "TOOL_STORE_DESCRIPTION", "TOOL_FIND_DESCRIPTION"]:
+        monkeypatch.delenv(key, raising=False)
+    
+    # Then set the test environment variables
     env_vars = {
         "QDRANT_URL": ":memory:",
         "COLLECTION_NAME": "test_collection",
@@ -47,3 +54,9 @@ def mock_env_vars(monkeypatch):
     for key, value in env_vars.items():
         monkeypatch.setenv(key, value)
     return env_vars 
+
+@pytest.fixture(autouse=True)
+def skip_docker_tests(request):
+    """Skip Docker-related tests if SKIP_DOCKER_TESTS is set."""
+    if os.environ.get("SKIP_DOCKER_TESTS") == "true" and "docker" in request.node.name.lower():
+        pytest.skip("Docker tests are skipped in this environment") 

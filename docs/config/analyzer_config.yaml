@@ -1,0 +1,97 @@
+---
+# Documentation Analyzer Configuration
+
+# File Search Configuration
+file_patterns:
+  include:
+    - "*.py"
+    - "*.md"
+    - "*.yaml"
+    - "*.yml"
+    - "*.json"
+    - "*.sh"
+    - "*.txt"
+
+# Directories to ignore during analysis
+ignore_directories:
+  - ".git"
+  - ".venv"
+  - "__pycache__"
+  - "node_modules"
+  - "build"
+  - "dist"
+  - ".pytest_cache"
+  - ".mypy_cache"
+  - ".coverage"
+
+# Output Configuration
+output:
+  files:
+    codebase_structure: "codebase_structure.txt"
+    summary_document: "summary_document.txt"
+  directories:
+    module_summaries: "module_summaries"
+    workflows: "workflows"
+    metrics: "metrics"
+
+# Qdrant Integration
+qdrant:
+  enabled: true
+  url: "${QDRANT_URL}"
+  collection_name: "${QDRANT_COLLECTION}"
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  batch_size: 100
+  
+  # Document types to index
+  index_types:
+    - docstring
+    - class_description
+    - function_description
+    - workflow_description
+
+# Analysis Settings
+analysis:
+  max_file_size: 1048576  # 1MB in bytes
+  include_source: false
+  generate_metrics: true
+  
+  # Code metrics to collect
+  metrics:
+    - complexity
+    - documentation_coverage
+    - lines_of_code
+    - maintainability_index
+
+# Template Settings
+templates:
+  directory: "templates"
+  custom_templates_dir: "custom"
+  default_template: "module.md.j2"
+
+# Documentation Categories
+categories:
+  - name: "Modules"
+    output_dir: "modules"
+    template: "module.md.j2"
+    description: "Documentation for individual modules"
+  - name: "Architecture"
+    output_dir: "architecture"
+    template: "architecture.md.j2"
+    description: "Overall system architecture documentation"
+  - name: "Workflows"
+    output_dir: "workflows"
+    template: "workflow.md.j2"
+    description: "Documentation for system workflows and processes"
+
+# Search Configuration
+search:
+  enable_semantic_search: true
+  enable_keyword_search: true
+  max_results: 10
+  similarity_threshold: 0.7
+
+# Logging settings
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "analyzer.log" 

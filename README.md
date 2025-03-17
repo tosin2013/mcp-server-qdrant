@@ -1,53 +1,104 @@
 # MCP Server Qdrant
 
-A Model Context Protocol (MCP) server implementation using Qdrant as the vector database backend. This server enables semantic search and memory storage capabilities for AI assistants.
+Model Context Protocol server implementation for Qdrant vector database.
 
 ## Features
 
-- Semantic search using Qdrant vector database
-- FastEmbed for efficient text embeddings
-- Support for both local and remote Qdrant instances
+- Implements MCP protocol for Qdrant vector database
+- Supports embedding generation with FastEmbed
 - Configurable through environment variables
-- Integration with Claude Desktop and other MCP clients
+- Docker support for easy deployment
+
+## Installation
+
+```bash
+pip install mcp-server-qdrant
+```
+
+## Usage
+
+Set required environment variables:
+
+```bash
+export QDRANT_URL=http://localhost:6333
+export COLLECTION_NAME=my_collection
+```
+
+Run the server:
+
+```bash
+mcp-server-qdrant
+```
+
+## Development
+
+Run tests:
+
+```bash
+docker-compose -f docker-compose.test.yml up --build
+```
+
+## Documentation
+
+- [Getting Started](docs/guides/getting-started.md)
+- [Docker Setup Guide](docs/guides/docker-setup.md)
+- [Task Management Guide](docs/guides/task-management.md)
+- [Architecture Decisions](docs/adr/)
+
+## Quick Start
+
+1. Install prerequisites:
+   - Docker Desktop
+   - Claude Desktop or another MCP client
+   - Git
+
+2. Clone and start services:
+```bash
+git clone https://github.com/your-org/mcp-server-qdrant
+cd mcp-server-qdrant
+docker-compose up -d
+```
+
+3. Configure your MCP client (see [Task Management Guide](docs/guides/task-management.md))
+
+4. Start using the system:
+```
+I have a test failure in test_authentication. Can you help me find similar issues?
+```
+
+## Development
+
+### Setup Development Environment
+
+```bash
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
+pytest
+```
+
+### Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Prerequisites
 
 - Python 3.11 or higher
 - Docker (optional, for containerized deployment)
 - Node.js and npm (for Claude Desktop integration)
-
-## Installation
-
-### Local Development
-
-1. Clone the repository:
-```bash
-git clone https://github.com/tosin2013/mcp-server-qdrant.git
-cd mcp-server-qdrant
-```
-
-2. Create and activate a virtual environment:
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-3. Install development dependencies:
-```bash
-pip install hatch
-hatch env create
-```
-
-4. Install the package in development mode:
-```bash
-pip install -e .
-```
-
-### Production Installation
-
-```bash
-pip install mcp-server-qdrant
-```
 
 ## Platform-Specific Setup Guides
 
@@ -155,14 +206,63 @@ docker run -d \
 
 ## Claude Desktop Integration
 
-1. Install required packages globally:
-```bash
-npm install -g @modelcontextprotocol/server-qdrant
+### Configuration Format
+
+For local development using `uvx`:
+```json
+{
+  "qdrant": {
+    "command": "uvx",
+    "args": ["mcp-server-qdrant"],
+    "env": {
+      "QDRANT_URL": "https://xyz-example.eu-central.aws.cloud.qdrant.io:6333",
+      "QDRANT_API_KEY": "your_api_key",
+      "COLLECTION_NAME": "your-collection-name",
+      "EMBEDDING_MODEL": "sentence-transformers/all-MiniLM-L6-v2"
+    }
+  }
+}
 ```
 
-2. Configure Claude Desktop:
-- Create or edit `claude_desktop_config.json`
-- Add the Qdrant server configuration (see ADR for details)
+For Docker deployment:
+```json
+{
+  "qdrant": {
+    "command": "docker",
+    "args": [
+      "run",
+      "--rm",
+      "--network", "mcp-network",
+      "-p", "8080:8080",
+      "-e", "QDRANT_URL=http://qdrant:6333",
+      "-e", "MCP_COLLECTION=mcp_unified_store",
+      "-e", "EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2",
+      "-e", "LOG_LEVEL=INFO",
+      "mcp-server-qdrant:latest"
+    ]
+  }
+}
+```
+
+For cloud-hosted Qdrant:
+```json
+{
+  "qdrant": {
+    "command": "docker",
+    "args": [
+      "run",
+      "--rm",
+      "-p", "8080:8080",
+      "-e", "QDRANT_URL=https://xyz-example.eu-central.aws.cloud.qdrant.io:6333",
+      "-e", "QDRANT_API_KEY=your_api_key",
+      "-e", "MCP_COLLECTION=your-collection-name",
+      "-e", "EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2",
+      "-e", "LOG_LEVEL=INFO",
+      "mcp-server-qdrant:latest"
+    ]
+  }
+}
+```
 
 ## Contributing
 

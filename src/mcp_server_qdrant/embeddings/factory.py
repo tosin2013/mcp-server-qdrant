@@ -1,6 +1,5 @@
 from mcp_server_qdrant.embeddings.base import EmbeddingProvider
-from mcp_server_qdrant.embeddings.types import EmbeddingProviderType
-from mcp_server_qdrant.settings import EmbeddingProviderSettings
+from mcp_server_qdrant.embeddings.types import EmbeddingProviderType, EmbeddingProviderSettings
 
 
 def create_embedding_provider(settings: EmbeddingProviderSettings) -> EmbeddingProvider:

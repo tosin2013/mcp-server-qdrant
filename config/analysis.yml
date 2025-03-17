@@ -1,0 +1,56 @@
+---
+# Codebase Analysis Configuration
+
+# Directories to ignore during analysis
+ignore_dirs:
+  - node_modules
+  - .venv
+  - venv
+  - vendor
+  - __pycache__
+  - .git
+  - .pytest_cache
+  - dist
+  - build
+
+# File extensions to analyze
+file_extensions:
+  # Code files
+  .py: python
+  .js: javascript
+  .jsx: javascript
+  .ts: typescript
+  .tsx: typescript
+  .go: golang
+  .rs: rust
+  .java: java
+  .cpp: cpp
+  .c: c
+  .h: c
+  .hpp: cpp
+  
+  # Config files
+  .json: json
+  .yml: yaml
+  .yaml: yaml
+  .toml: toml
+  .ini: ini
+  .env: env
+  
+  # Documentation
+  .md: markdown
+  .rst: restructuredtext
+  .txt: text
+  
+  # Shell scripts
+  .sh: shell
+  .bash: shell
+  .zsh: shell
+  
+  # Templates
+  .j2: jinja2
+  .jinja2: jinja2
+  .template: template
+
+# Size of content chunks for embedding generation
+chunk_size: 1000 
